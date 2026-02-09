@@ -11,7 +11,14 @@ public:
   string after_cursor;
   int line_number;
 
-  Buffer() { line_number = 0; }
+  Buffer() {
+    // Scratch file case
+    line_number = 0;
+    lines_above = {};
+    lines_bellow = {};
+    before_cursor = "";
+    after_cursor = "";
+  }
 
   void insert_line(int index, string content = "");
 };
