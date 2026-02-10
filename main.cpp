@@ -77,7 +77,7 @@ public:
 
   Buffer() {
     // Scratch file case
-    cursor_x = 0;
+    cursor_x = 50;
     cursor_y = 0;
 
     window = Window();
@@ -124,16 +124,34 @@ public:
   }
 
   void draw_cursor_in_screen() {
-
     int screen_line = 0;
     int line_number = 0;
+    // Find screen location in
     while (screen_line < window.window_h) {
       if (line_number == cursor_y) {
+
+        if (cursor_x > lines[line_number].full_string.size()) {
+          cursor_x = lines[line_number].full_string.size();
+        }
+
+        int wrapped_line = (cursor_x) / (window.window_w - SIDE_NUMBER_PADDING);
+        int x_possition = (cursor_x) % (window.window_w - SIDE_NUMBER_PADDING);
+
+        // The actual x_possition of the mouse in memory won't change
+        // this this condition will need to be applied when inserting to append
+        // to the end.
+        if (x_possition >
+            lines[line_number].wrapped_lines[wrapped_line].size()) {
+          x_possition = lines[line_number].wrapped_lines[wrapped_line].size();
+        }
+
+        Ncurses::move_cursor(screen_line + wrapped_line,
+                             x_possition + SIDE_NUMBER_PADDING);
+
         break;
       }
 
       auto &current_line = lines[line_number];
-
       for (int wrapped_line_num = 0;
            wrapped_line_num < current_line.wrapped_lines.size();
            wrapped_line_num++) {
@@ -142,13 +160,13 @@ public:
       line_number++;
     }
   }
-
-  void move_to_cursor_location() { Ncurses::move_cursor(cursor_y, cursor_x); }
 };
 
 void ncurses_loop(Buffer &buf) {
   keypad(stdscr, TRUE);
   buf.full_screen_render();
+  buf.draw_cursor_in_screen();
+
   while (true) {
     int ch = Ncurses::get_input_character();
 
@@ -159,12 +177,17 @@ void ncurses_loop(Buffer &buf) {
     case '\r':
       break;
     case KEY_RESIZE:
+      buf.window.update_window_size();
+      for (auto &line : buf.lines) {
+        line.wrap_lines(buf.window.window_w);
+      }
       break;
     default:
       break;
     }
 
     buf.full_screen_render();
+    buf.draw_cursor_in_screen();
   }
 }
 
