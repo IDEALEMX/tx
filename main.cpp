@@ -1,3 +1,12 @@
+/*
+ * TODO
+ * optimize everything by:
+ * 1) start at 0,0
+ * 2) keep track of current line
+ * 3] optimize by only re-warping when necessary and the lines that are
+ * necessary
+ */
+
 #include "ncurses.h"
 #include <string>
 #include <vector>
