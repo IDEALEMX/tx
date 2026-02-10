@@ -81,7 +81,7 @@ public:
 
   Buffer() {
     // Scratch file case
-    cursor_x = 1;
+    cursor_x = 0;
     cursor_y = 0;
 
     window = Window();
@@ -179,6 +179,7 @@ void ncurses_loop(Buffer &buf) {
   while (true) {
     int ch = Ncurses::get_input_character();
 
+    int lines_sum = 0;
     switch (ch) {
     case KEY_BACKSPACE:
       break;
@@ -189,6 +190,25 @@ void ncurses_loop(Buffer &buf) {
       buf.window.update_window_size();
       for (auto &line : buf.lines) {
         line.wrap_lines(buf.window.window_w);
+      }
+      break;
+    case KEY_LEFT:
+      if (buf.cursor_x > 0) {
+        buf.cursor_x -= 1;
+      }
+      break;
+    case KEY_RIGHT:
+      buf.cursor_x += 1;
+      break;
+
+    case KEY_UP:
+      if (buf.cursor_y > 0) {
+        buf.cursor_y -= 1;
+      }
+      break;
+    case KEY_DOWN:
+      if (buf.cursor_y < buf.lines.size() - 1) {
+        buf.cursor_y += 1;
       }
       break;
     default:
