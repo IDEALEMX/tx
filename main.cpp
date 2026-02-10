@@ -1,5 +1,4 @@
 #include "ncurses.h"
-#include <iostream>
 #include <string>
 #include <vector>
 using namespace std;
@@ -33,6 +32,11 @@ public:
   vector<string> wrapped_lines;
 
   void wrap_lines(int window_w) {
+
+    if (window_w <= 1) {
+      return;
+    }
+
     int wrapped_lines_number =
         Computation::ceil_int_div(full_string.length(), window_w);
     wrapped_lines.clear();
@@ -77,7 +81,7 @@ public:
 
   Buffer() {
     // Scratch file case
-    cursor_x = 50;
+    cursor_x = 1;
     cursor_y = 0;
 
     window = Window();
@@ -126,6 +130,11 @@ public:
   void draw_cursor_in_screen() {
     int screen_line = 0;
     int line_number = 0;
+
+    if (window.window_w <= SIDE_NUMBER_PADDING) {
+      return;
+    }
+
     // Find screen location in
     while (screen_line < window.window_h) {
       if (line_number == cursor_y) {
