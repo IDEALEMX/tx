@@ -8,12 +8,15 @@
  */
 
 #include "ncurses.h"
+#include <cassert>
 #include <string>
 #include <vector>
 using namespace std;
 
 // General configuration variables
-int SIDE_NUMBER_PADDING = 3;
+int LEFT_SIDE_PADDING = 4;
+// Most be at least 1!!!
+int RIGHT_SIDE_PADDING = 2;
 
 class Computation {
 public:
@@ -30,7 +33,8 @@ public:
   static void clear_current_line() { clrtoeol(); }
   static void refresh_screen() { refresh(); }
   static void move_and_write_to(int y, int x, string content) {
-    mvprintw(y, x, content.c_str());
+    auto str = content.c_str();
+    mvprintw(y, x, str);
   }
   static void clear_full_screen() { clear(); };
 };
@@ -42,15 +46,22 @@ public:
 
   void wrap_lines(int window_w) {
 
+    // TODO equal the distance tolerance
     if (window_w <= 1) {
       return;
     }
 
+    int padded_size = window_w - LEFT_SIDE_PADDING - RIGHT_SIDE_PADDING;
+
     int wrapped_lines_number =
-        Computation::ceil_int_div(full_string.length(), window_w);
+        Computation::ceil_int_div(full_string.length(), padded_size);
     wrapped_lines.clear();
+    if (wrapped_lines_number == 0) {
+      wrapped_lines_number = 1;
+    }
     for (int i = 0; i < wrapped_lines_number; i++) {
-      wrapped_lines.push_back(full_string.substr(window_w * i, window_w));
+      string line = full_string.substr(padded_size * i, padded_size);
+      wrapped_lines.push_back(line);
     }
   }
 
@@ -64,16 +75,17 @@ class Window {
 public:
   int window_h;
   int window_w;
-  int line_offset;
+  int first_line;
 
-  void update_window_size() {
-    getmaxyx(stdscr, window_h, window_w);
-    window_w -= SIDE_NUMBER_PADDING;
+  int padded_size() {
+    return window_w - LEFT_SIDE_PADDING - RIGHT_SIDE_PADDING;
   }
+
+  void update_window_size() { getmaxyx(stdscr, window_h, window_w); }
 
   Window() {
     update_window_size();
-    line_offset = 0;
+    first_line = 0;
   }
 };
 
@@ -97,19 +109,46 @@ public:
     lines.push_back(
         Line("holaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-             "aaaaaaaaaaaaaaaaaaaaaaaaa",
+             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
              window.window_w));
     lines.push_back(Line("mi", window.window_w));
     lines.push_back(Line("amigo", window.window_w));
   }
 
+  void delete_character() {
+    if (lines.empty() || cursor_y < 0 || cursor_y >= lines.size()) {
+      return;
+    }
+
+    if (cursor_y == 0 && cursor_x == 0) {
+      return;
+    }
+
+    if (cursor_x == 0) {
+      // TODO
+      return;
+    }
+
+    string text_line = lines[cursor_y].full_string;
+
+    if (text_line.size() == 0) {
+      lines.erase(lines.begin() + cursor_y);
+      if (cursor_y > 0) {
+        cursor_y--;
+        cursor_x = 10000;
+      }
+    } else {
+      assert(cursor_x - 1 >= 0);
+      lines[cursor_y].full_string.erase(cursor_x - 1, 1);
+      cursor_x--;
+    }
+  }
+
   void full_screen_render() {
     Ncurses::clear_full_screen();
+
     int screen_line = 0;
-    int line_number = 0;
+    int line_number = window.first_line;
     while (screen_line < window.window_h) {
       if (lines.size() <= line_number) {
         break;
@@ -117,7 +156,7 @@ public:
 
       auto &current_line = lines[line_number];
 
-      if (SIDE_NUMBER_PADDING != 0) {
+      if (LEFT_SIDE_PADDING > 3) {
         Ncurses::move_and_write_to(screen_line, 0, to_string(line_number));
       }
 
@@ -126,7 +165,7 @@ public:
            wrapped_line_num++) {
 
         Ncurses::move_and_write_to(
-            screen_line, SIDE_NUMBER_PADDING,
+            screen_line, LEFT_SIDE_PADDING,
             current_line.wrapped_lines[wrapped_line_num]);
 
         screen_line++;
@@ -138,34 +177,30 @@ public:
 
   void draw_cursor_in_screen() {
     int screen_line = 0;
-    int line_number = 0;
+    int line_number = window.first_line;
 
-    if (window.window_w <= SIDE_NUMBER_PADDING) {
+    if (window.padded_size() <= 1) {
       return;
     }
 
     // Find screen location in
-    while (screen_line < window.window_h) {
+    while (screen_line < window.window_h && line_number < lines.size()) {
       if (line_number == cursor_y) {
 
         if (cursor_x > lines[line_number].full_string.size()) {
           cursor_x = lines[line_number].full_string.size();
         }
 
-        int wrapped_line = (cursor_x) / (window.window_w - SIDE_NUMBER_PADDING);
-        int x_possition = (cursor_x) % (window.window_w - SIDE_NUMBER_PADDING);
+        int wrapped_line = (cursor_x) / (window.padded_size());
+        int x_possition = (cursor_x) % (window.padded_size());
 
-        // The actual x_possition of the mouse in memory won't change
-        // this this condition will need to be applied when inserting to append
-        // to the end.
         if (x_possition >
             lines[line_number].wrapped_lines[wrapped_line].size()) {
           x_possition = lines[line_number].wrapped_lines[wrapped_line].size();
         }
 
         Ncurses::move_cursor(screen_line + wrapped_line,
-                             x_possition + SIDE_NUMBER_PADDING);
-
+                             x_possition + LEFT_SIDE_PADDING);
         break;
       }
 
@@ -191,6 +226,11 @@ void ncurses_loop(Buffer &buf) {
     int lines_sum = 0;
     switch (ch) {
     case KEY_BACKSPACE:
+      buf.delete_character();
+      buf.window.update_window_size();
+      for (auto &line : buf.lines) {
+        line.wrap_lines(buf.window.window_w);
+      }
       break;
     case '\n':
     case '\r':
