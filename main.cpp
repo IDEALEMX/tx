@@ -104,20 +104,36 @@ public:
              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
              window));
     lines.push_back(Line("mi", window));
+    lines.push_back(Line("", window));
+    lines.push_back(Line("", window));
     lines.push_back(Line("amigo", window));
     lines.push_back(Line("", window));
   }
 
   void delete_character() {
     if (cursor_x == 0) {
+      if (cursor_y == 0) {
+        return;
+      }
+
+      cursor_x = lines.at(cursor_y - 1).full_string.size();
+      lines.at(cursor_y - 1).full_string += lines.at(cursor_y).full_string;
+      lines.erase(lines.begin() + cursor_y);
+      cursor_y--;
+      rewarp_everything();
       return;
     }
-    lines[cursor_y].full_string.erase(cursor_x - 1);
+
+    lines[cursor_y].full_string.erase(cursor_x - 1, 1);
+
+    lines[cursor_y].wrap_lines(window);
   }
 
   void text_render() {
     int current_line = window.first_line;
     int current_screen_line = 0;
+
+    Ncurses::clear_full_screen();
 
     while (current_screen_line < window.window_h &&
            current_line < lines.size()) {
@@ -166,6 +182,13 @@ public:
     text_render();
     cursor_render();
   }
+
+  // TODO must eventually implement "re-warp from up to screen"
+  void rewarp_everything() {
+    for (auto &line : lines) {
+      line.wrap_lines(window);
+    }
+  }
 };
 
 void ncurses_loop(Buffer &buf) {
@@ -185,6 +208,7 @@ void ncurses_loop(Buffer &buf) {
       break;
     case KEY_RESIZE:
       buf.window.update_window_size();
+      buf.rewarp_everything();
       break;
     case KEY_LEFT:
       if (buf.cursor_x > 0) {
