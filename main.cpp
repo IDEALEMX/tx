@@ -138,6 +138,11 @@ public:
     while (current_screen_line < window.window_h &&
            current_line < lines.size()) {
 
+      Ncurses::move_and_write_to(current_screen_line, 0,
+                                 current_screen_line == cursor_y
+                                     ? " " + to_string(current_screen_line)
+                                     : to_string(current_screen_line));
+
       for (auto &line : lines.at(current_line).wrapped_lines) {
         Ncurses::move_and_write_to(current_screen_line, LEFT_SIDE_PADDING,
                                    line);
