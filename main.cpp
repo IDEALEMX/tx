@@ -1,4 +1,3 @@
-// some bs, go one commit back for actual change
 #include "ncurses.h"
 #include <cassert>
 #include <string>
@@ -109,7 +108,12 @@ public:
     lines.push_back(Line("", window));
   }
 
-  void delete_character() {}
+  void delete_character() {
+    if (cursor_x == 0) {
+      return;
+    }
+    lines[cursor_y].full_string.erase(cursor_x - 1);
+  }
 
   void text_render() {
     int current_line = window.first_line;
