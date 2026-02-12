@@ -54,7 +54,27 @@ public:
   string full_string;
   vector<string> wrapped_lines;
 
-  void wrap_lines(Window &window) {}
+  void wrap_lines(Window &window) {
+
+    if (window.padded_size() <= 0) {
+      return;
+    }
+
+    if (full_string == "") {
+      wrapped_lines = {""};
+      return;
+    }
+
+    wrapped_lines.clear();
+
+    int number_of_wrapps =
+        Computation::ceil_int_div(full_string.length(), window.padded_size());
+
+    for (int i = 0; i < number_of_wrapps; i++) {
+      wrapped_lines.push_back(
+          full_string.substr(window.padded_size() * i, window.padded_size()));
+    }
+  }
 
   Line(string initial_string, Window &window) {
     full_string = initial_string;
@@ -82,25 +102,76 @@ public:
     lines.push_back(
         Line("holaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
              window));
     lines.push_back(Line("mi", window));
     lines.push_back(Line("amigo", window));
+    lines.push_back(Line("", window));
   }
 
   void delete_character() {}
 
-  void full_screen_render() {}
+  void text_render() {
+    int current_line = window.first_line;
+    int current_screen_line = 0;
+
+    while (current_screen_line < window.window_h &&
+           current_line < lines.size()) {
+
+      for (auto &line : lines.at(current_line).wrapped_lines) {
+        Ncurses::move_and_write_to(current_screen_line, LEFT_SIDE_PADDING,
+                                   line);
+        current_screen_line++;
+      }
+      current_line++;
+    }
+  }
+
+  void cursor_render() {
+    int current_line = window.first_line;
+    int current_screen_line = 0;
+
+    while (current_screen_line < window.window_h &&
+           current_line < lines.size()) {
+
+      if (current_line == cursor_y) {
+
+        // Clamp cursor
+        if (cursor_x > lines[current_line].full_string.size()) {
+          cursor_x = lines[current_line].full_string.size();
+        }
+
+        int wrapped_line = cursor_x / window.padded_size();
+        int x_position = cursor_x % window.padded_size();
+
+        Ncurses::move_cursor(current_screen_line + wrapped_line,
+                             x_position + LEFT_SIDE_PADDING);
+
+        return;
+      }
+
+      for (auto &line : lines.at(current_line).wrapped_lines) {
+        current_screen_line++;
+      }
+
+      current_line++;
+    }
+  }
+
+  void full_screen_render() {
+    text_render();
+    cursor_render();
+  }
 };
 
 void ncurses_loop(Buffer &buf) {
   keypad(stdscr, TRUE);
-  buf.full_screen_render();
 
   while (true) {
+    buf.full_screen_render();
+
     int ch = Ncurses::get_input_character();
 
-    int lines_sum = 0;
     switch (ch) {
     case KEY_BACKSPACE:
       buf.delete_character();
@@ -133,8 +204,6 @@ void ncurses_loop(Buffer &buf) {
     default:
       break;
     }
-
-    buf.full_screen_render();
   }
 }
 
