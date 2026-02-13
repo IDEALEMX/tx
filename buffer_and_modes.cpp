@@ -149,6 +149,13 @@ class Basic : public Mode {
     buf.rewarp_everything();
   }
 
+  void insert_character(Buffer &buf, int ch) {
+    auto &line = buf.lines.at(buf.cursor_y).full_string;
+    line.insert(buf.cursor_x, 1, ch);
+    buf.cursor_x++;
+    buf.rewarp_everything();
+  }
+
   void handle_key_press(int ch, Buffer &buf) override {
 
     switch (ch) {
@@ -156,6 +163,12 @@ class Basic : public Mode {
       delete_character(buf);
       break;
 
+    case '\t':
+      insert_character(buf, ' ');
+      insert_character(buf, ' ');
+      insert_character(buf, ' ');
+      insert_character(buf, ' ');
+      break;
     case '\n':
     case '\r': {
       insert_new_line(buf, ch);
@@ -185,10 +198,7 @@ class Basic : public Mode {
       }
       break;
     default:
-      auto &line = buf.lines.at(buf.cursor_y).full_string;
-      line.insert(buf.cursor_x, 1, ch);
-      buf.cursor_x++;
-      buf.rewarp_everything();
+      insert_character(buf, ch);
       break;
     }
   };
