@@ -138,6 +138,7 @@ class Basic : public Mode {
     }
 
     buf.lines[buf.cursor_y].full_string.erase(buf.cursor_x - 1, 1);
+    buf.cursor_x--;
 
     buf.lines[buf.cursor_y].wrap_lines(buf.window);
   }
