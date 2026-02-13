@@ -142,15 +142,33 @@ class Basic : public Mode {
     buf.lines[buf.cursor_y].wrap_lines(buf.window);
   }
 
+  void insert_new_line(Buffer &buf, int ch) {
+    std::string &current = buf.lines[buf.cursor_y].full_string;
+
+    std::string right = current.substr(buf.cursor_x);
+    current = current.substr(0, buf.cursor_x);
+
+    buf.lines.insert(buf.lines.begin() + buf.cursor_y + 1,
+                     Line(right, buf.window));
+
+    buf.cursor_y++;
+    buf.cursor_x = 0;
+
+    buf.rewarp_everything();
+  }
+
   void handle_key_press(int ch, Buffer &buf) override {
 
     switch (ch) {
     case KEY_BACKSPACE:
       delete_character(buf);
       break;
+
     case '\n':
-    case '\r':
+    case '\r': {
+      insert_new_line(buf, ch);
       break;
+    }
     case KEY_RESIZE:
       buf.window.update_window_size();
       buf.rewarp_everything();
@@ -175,6 +193,10 @@ class Basic : public Mode {
       }
       break;
     default:
+      auto &line = buf.lines.at(buf.cursor_y).full_string;
+      line.insert(buf.cursor_x, 1, ch);
+      buf.cursor_x++;
+      buf.rewarp_everything();
       break;
     }
   };
