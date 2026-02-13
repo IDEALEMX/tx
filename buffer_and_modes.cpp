@@ -38,15 +38,6 @@ public:
     cursor_y = 0;
 
     window = Window();
-    lines.push_back(
-        Line("holaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-             window));
-    lines.push_back(Line("mi", window));
-    lines.push_back(Line("", window));
-    lines.push_back(Line("", window));
-    lines.push_back(Line("amigo", window));
     lines.push_back(Line("", window));
   }
 
