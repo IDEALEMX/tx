@@ -1,11 +1,11 @@
 #include <cassert>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 // Local includes
 #include "./providers.cpp"
-
-using namespace std;
 
 // CONFIGURATION
 // > 3
@@ -13,55 +13,16 @@ int LEFT_SIDE_PADDING = 4;
 // > 1
 int RIGHT_SIDE_PADDING = 2;
 
-class Window {
+using namespace std;
+
+#include "./line_and_window.cpp"
+
+class Buffer;
+
+class Mode {
 public:
-  int window_h;
-  int window_w;
-  int first_line;
-
-  int padded_size() {
-    return window_w - LEFT_SIDE_PADDING - RIGHT_SIDE_PADDING;
-  }
-
-  void update_window_size() { getmaxyx(stdscr, window_h, window_w); }
-
-  Window() {
-    update_window_size();
-    first_line = 0;
-  }
-};
-
-class Line {
-public:
-  string full_string;
-  vector<string> wrapped_lines;
-
-  void wrap_lines(Window &window) {
-
-    if (window.padded_size() <= 0) {
-      return;
-    }
-
-    if (full_string == "") {
-      wrapped_lines = {""};
-      return;
-    }
-
-    wrapped_lines.clear();
-
-    int number_of_wrapps =
-        Computation::ceil_int_div(full_string.length(), window.padded_size());
-
-    for (int i = 0; i < number_of_wrapps; i++) {
-      wrapped_lines.push_back(
-          full_string.substr(window.padded_size() * i, window.padded_size()));
-    }
-  }
-
-  Line(string initial_string, Window &window) {
-    full_string = initial_string;
-    wrap_lines(window);
-  }
+  virtual ~Mode() = default;
+  virtual void handle_key_press(int ch, Buffer &buf) = 0;
 };
 
 class Buffer {
@@ -75,7 +36,16 @@ public:
   int cursor_x;
   int cursor_y;
 
-  Buffer() {
+  unique_ptr<Mode> current_mode;
+
+  void set_mode(unique_ptr<Mode> new_mode) {
+    current_mode = std::move(new_mode);
+  }
+
+  Buffer(unique_ptr<Mode> initial_mode) {
+
+    current_mode = std::move(initial_mode);
+
     // Scratch file case
     cursor_x = 0;
     cursor_y = 0;
@@ -93,24 +63,7 @@ public:
     lines.push_back(Line("", window));
   }
 
-  void delete_character() {
-    if (cursor_x == 0) {
-      if (cursor_y == 0) {
-        return;
-      }
-
-      cursor_x = lines.at(cursor_y - 1).full_string.size();
-      lines.at(cursor_y - 1).full_string += lines.at(cursor_y).full_string;
-      lines.erase(lines.begin() + cursor_y);
-      cursor_y--;
-      rewarp_everything();
-      return;
-    }
-
-    lines[cursor_y].full_string.erase(cursor_x - 1, 1);
-
-    lines[cursor_y].wrap_lines(window);
-  }
+  void handle_key_press(int ch) { current_mode->handle_key_press(ch, *this); }
 
   void text_render() {
     int current_line = window.first_line;
@@ -179,17 +132,34 @@ public:
   }
 };
 
-void ncurses_loop(Buffer &buf) {
-  keypad(stdscr, TRUE);
+// Mode definitions
+class Basic : public Mode {
 
-  while (true) {
-    buf.full_screen_render();
+  void delete_character(Buffer &buf) {
+    if (buf.cursor_x == 0) {
+      if (buf.cursor_y == 0) {
+        return;
+      }
 
-    int ch = Ncurses::get_input_character();
+      buf.cursor_x = buf.lines.at(buf.cursor_y - 1).full_string.size();
+      buf.lines.at(buf.cursor_y - 1).full_string +=
+          buf.lines.at(buf.cursor_y).full_string;
+      buf.lines.erase(buf.lines.begin() + buf.cursor_y);
+      buf.cursor_y--;
+      buf.rewarp_everything();
+      return;
+    }
+
+    buf.lines[buf.cursor_y].full_string.erase(buf.cursor_x - 1, 1);
+
+    buf.lines[buf.cursor_y].wrap_lines(buf.window);
+  }
+
+  void handle_key_press(int ch, Buffer &buf) override {
 
     switch (ch) {
     case KEY_BACKSPACE:
-      buf.delete_character();
+      delete_character(buf);
       break;
     case '\n':
     case '\r':
@@ -220,12 +190,24 @@ void ncurses_loop(Buffer &buf) {
     default:
       break;
     }
+  };
+};
+
+void ncurses_loop(Buffer &buf) {
+  keypad(stdscr, TRUE);
+
+  while (true) {
+    buf.full_screen_render();
+
+    int ch = Ncurses::get_input_character();
+
+    buf.handle_key_press(ch);
   }
 }
 
 int main(int argc, char *argv[]) {
   initscr();
-  Buffer test = Buffer();
+  Buffer test = Buffer(make_unique<Basic>());
   ncurses_loop(test);
   return 0;
   endwin();
