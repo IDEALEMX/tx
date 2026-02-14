@@ -12,7 +12,7 @@ int RIGHT_SIDE_PADDING = 2;
 
 using namespace std;
 
-#include "./buffer_and_modes.cpp"
+#include "./modes.cpp"
 
 void ncurses_loop(Buffer &buf) {
   keypad(stdscr, TRUE);
