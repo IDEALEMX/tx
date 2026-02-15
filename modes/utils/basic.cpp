@@ -25,6 +25,17 @@ public:
     buf.lines[buf.cursor_y].wrap_lines(buf.window);
   }
 
+  static void delete_character_no_backline(Buffer &buf, int limit) {
+    if (buf.cursor_x == 0 || buf.cursor_x <= limit) {
+      return;
+    }
+
+    buf.lines[buf.cursor_y].full_string.erase(buf.cursor_x - 1, 1);
+    buf.cursor_x--;
+
+    buf.lines[buf.cursor_y].wrap_lines(buf.window);
+  }
+
   static void insert_new_line(Buffer &buf, int ch) {
     std::string &current = buf.lines[buf.cursor_y].full_string;
 
