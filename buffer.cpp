@@ -43,7 +43,16 @@ public:
 
   void handle_key_press(int ch) { current_mode->handle_key_press(ch, *this); }
 
+  void updute_window_position() {}
+
   void text_render() {
+    updute_window_position();
+
+    // Case: mouse before screen
+    if (window.first_line > cursor_y) {
+      window.first_line = cursor_y;
+    }
+
     int current_line = window.first_line;
     int current_screen_line = 0;
 
@@ -63,6 +72,12 @@ public:
         current_screen_line++;
       }
       current_line++;
+    }
+    int lines_in_screen = current_line - window.first_line;
+
+    if (window.first_line + lines_in_screen - 1 < cursor_y) {
+      window.first_line = cursor_y - lines_in_screen + 1;
+      text_render();
     }
   }
 
