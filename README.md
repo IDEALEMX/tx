@@ -25,7 +25,7 @@ Basic features:
   - exit: for exiting.
 
 ## Current state
-### v. 0.1
+### v. 0.1.0
 First version of the project still very small and minimal, more of a proof of
 concept than anything.
 Code is still unoptimized, and structure will still almost certainly change,
