@@ -1,6 +1,7 @@
 #include <cassert>
 #include <fstream>
 #include <memory>
+#include <ncurses.h>
 #include <string>
 
 // Local includes
@@ -29,6 +30,7 @@ void ncurses_loop(Buffer &buf) {
     buf.handle_key_press(ch, exit);
 
     if (exit) {
+      keypad(stdscr, FALSE);
       return;
     }
   }
@@ -56,6 +58,6 @@ int main(int argc, char *argv[]) {
 
   ncurses_loop(test);
 
-  return 0;
   endwin();
+  return 0;
 }
