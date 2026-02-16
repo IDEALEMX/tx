@@ -25,13 +25,17 @@ void ncurses_loop(Buffer &buf) {
 
     int ch = Ncurses::get_input_character();
 
-    buf.handle_key_press(ch);
+    bool exit = false;
+    buf.handle_key_press(ch, exit);
+
+    if (exit) {
+      return;
+    }
   }
 }
 
 int main(int argc, char *argv[]) {
   initscr();
-  Buffer test = Buffer(make_unique<Basic>());
 
   // Verify a file was input-ed (for now)
   if (argc == 1) {
@@ -39,12 +43,16 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+  Buffer test = Buffer(make_unique<Basic>(Basic(argv[1])));
+
   ifstream in(argv[1]);
 
   string line;
   while (getline(in, line)) {
     test.lines.push_back(Line(line, test.window));
   }
+
+  in.close();
 
   ncurses_loop(test);
 

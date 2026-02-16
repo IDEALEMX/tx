@@ -8,13 +8,13 @@ class Buffer;
 class Mode {
 public:
   virtual ~Mode() = default;
-  virtual void handle_key_press(int ch, Buffer &buf) = 0;
+  virtual void handle_key_press(int ch, Buffer &buf, bool &exit) = 0;
 };
 using namespace std;
 
 class Buffer {
 public:
-  // full text buffer separated into lines
+  // Full text buffer separated into lines
   vector<Line> lines;
 
   Window window;
@@ -33,15 +33,15 @@ public:
 
     current_mode = std::move(initial_mode);
 
-    // Scratch file case
     cursor_x = 0;
     cursor_y = 0;
 
     window = Window();
-    lines.push_back(Line("", window));
   }
 
-  void handle_key_press(int ch) { current_mode->handle_key_press(ch, *this); }
+  void handle_key_press(int ch, bool &exit) {
+    current_mode->handle_key_press(ch, *this, exit);
+  }
 
   void updute_window_position() {}
 
