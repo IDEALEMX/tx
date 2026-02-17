@@ -43,10 +43,7 @@ public:
     current_mode->handle_key_press(ch, *this, exit);
   }
 
-  void updute_window_position() {}
-
   void text_render() {
-    updute_window_position();
 
     // Case: mouse before screen
     if (window.first_line > cursor_y) {
