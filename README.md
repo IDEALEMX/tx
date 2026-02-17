@@ -1,7 +1,7 @@
 # TX
 ## What is it
-Tx is a small text editor written in c++, with a focus on being simple, fast
-and simple at its core, allowing for very manual and fine tuned configuration.
+Tx is a minimal text editor written in c++, with a focus on being simple, fast
+and allowing for extremely manual and fine tuned configuration.
   
 One important thing to note is that TX is configured not via a config file but
 by extending the c++ code via "module" classes and recompiling.
